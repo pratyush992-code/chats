@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: icon rail | chat column | settings panel (drawer under 900px) */
+:root{
+  --bg:#0b0b0c; --panel:#111113; --panel2:#18181b; --line:#27272c; --fg:#ececee; --muted:#8d8d96;
+  --accent:#f55036; --accent-fg:#fff; --ok:#3ecf8e; --err:#ff6b6b;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:14px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:56px minmax(0,1fr) 320px;height:100%;height:100dvh}
+
+/* rail */
+.rail{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px}
+.mark{width:32px;height:32px;border-radius:8px;background:var(--accent);display:grid;place-items:center;margin-bottom:10px;color:#fff;font-weight:600;font-size:16px}
+.ri{width:38px;height:38px;border-radius:8px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;text-decoration:none}
+.ri:hover{background:var(--panel2);color:var(--fg)}
+.ri.on{background:var(--panel2);color:var(--fg)}
+.ri svg{width:18px;height:18px}
+.grow{flex:1}
+
+/* main */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.top{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);min-height:52px}
+.top h1{font-size:15px;font-weight:600;margin:0}
+.top .mdl{font:12px var(--mono);color:var(--muted);padding:2px 8px;border:1px solid var(--line);border-radius:999px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);font-size:13px;white-space:nowrap}
+.btn:hover{border-color:#3a3a41}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:500}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--err)}
+.dot.ok{background:var(--ok)}
+#openSettings{display:none}
+
+.scroll{flex:1;min-height:0;overflow:auto}
+.col{max-width:820px;margin:0 auto;padding:16px 16px 8px}
+.sys{border:1px solid var(--line);background:var(--panel);border-radius:10px;margin-bottom:18px}
+.sys summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.sys summary::-webkit-details-marker{display:none}
+.sys textarea{display:block;width:100%;border:0;border-top:1px solid var(--line);background:transparent;padding:10px 12px;resize:none;min-height:64px;max-height:240px;outline:none}
+
+.empty{padding:9vh 0 0;text-align:center}
+.empty h2{font-size:26px;margin:0 0 6px;font-weight:600}
+.empty p{color:var(--muted);margin:0 0 22px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 14px;font-size:13px;color:var(--fg)}
+.chip:hover{border-color:var(--accent)}
+
+.msg{padding:14px 0;border-top:1px solid var(--line)}
+.msg:first-child{border-top:0}
+.role{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;margin-bottom:6px;min-height:22px}
+.msg.assistant .role{color:var(--accent)}
+.acts{margin-left:auto;display:flex;gap:2px;opacity:0;transition:opacity .12s}
+.msg:hover .acts,.acts:focus-within{opacity:1}
+.acts button{border:0;background:transparent;color:var(--muted);font-size:12px;padding:2px 8px;border-radius:6px;text-transform:none;letter-spacing:0}
+.acts button:hover{background:var(--panel2);color:var(--fg)}
+.txt{white-space:pre-wrap;overflow-wrap:anywhere}
+.md{overflow-wrap:anywhere}
+.md>*:first-child{margin-top:0}
+.md p{margin:0 0 .8em}
+.md h2,.md h3,.md h4,.md h5{margin:1.1em 0 .45em;line-height:1.3}
+.md h2{font-size:1.25em}.md h3{font-size:1.12em}.md h4,.md h5{font-size:1em}
+.md ul,.md ol{margin:0 0 .8em;padding-left:1.4em}
+.md li{margin:.15em 0}
+.md a{color:var(--accent)}
+.md code{font:12.5px var(--mono);background:var(--panel2);padding:1px 5px;border-radius:5px}
+.md blockquote{margin:0 0 .8em;padding-left:12px;border-left:3px solid var(--line);color:var(--muted)}
+.md hr{border:0;border-top:1px solid var(--line);margin:1em 0}
+.tbl{overflow-x:auto;margin:0 0 .8em}
+.md table{border-collapse:collapse;font-size:13px}
+.md th,.md td{border:1px solid var(--line);padding:5px 10px;text-align:left}
+.md th{background:var(--panel2)}
+.code{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:0 0 .9em;background:#0e0e10}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:4px 6px 4px 12px;background:var(--panel2);font:11px var(--mono);color:var(--muted)}
+.code-h button{border:0;background:transparent;color:var(--muted);font-size:12px;padding:2px 8px;border-radius:6px}
+.code-h button:hover{color:var(--fg);background:#232328}
+.code pre{margin:0;padding:12px;overflow-x:auto}
+.code pre code{background:none;padding:0;font:12.5px/1.6 var(--mono)}
+details.think,details.tool{border:1px solid var(--line);border-radius:10px;margin:0 0 10px;background:var(--panel)}
+details.think>summary,details.tool>summary{cursor:pointer;padding:7px 12px;font-size:12px;color:var(--muted);list-style:none}
+details.think>summary::-webkit-details-marker,details.tool>summary::-webkit-details-marker{display:none}
+details[open]>summary{border-bottom:1px solid var(--line)}
+.think-b{padding:10px 12px;color:var(--muted);white-space:pre-wrap;font-size:13px;overflow-wrap:anywhere}
+.tool-b{padding:10px 12px;font-size:13px}
+.tool-b h6{margin:8px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tool-b h6:first-child{margin-top:0}
+.tool-b pre{margin:0;padding:8px 10px;background:#0e0e10;border-radius:8px;overflow-x:auto;font:12px/1.55 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.tool-b a{color:var(--accent);word-break:break-all}
+.res{margin:0 0 8px}
+.res small{display:block;color:var(--muted)}
+.stats{font:12px var(--mono);color:var(--muted);margin-top:6px}
+.err{border:1px solid #5a2a2a;background:#241214;color:#ffb4b4;border-radius:10px;padding:10px 12px;font-size:13px;overflow-wrap:anywhere}
+.typing{display:inline-flex;gap:4px;padding:6px 0}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.typing i{animation:none;opacity:.6}}
+
+.composer{border-top:1px solid var(--line);padding:12px 16px 16px}
+.cbox{max-width:820px;margin:0 auto;display:flex;gap:10px;align-items:flex-end;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:8px 8px 8px 14px}
+.cbox:focus-within{border-color:#44444c}
+.cbox textarea{flex:1;border:0;background:transparent;resize:none;outline:none;max-height:200px;min-height:24px;padding:4px 0;line-height:1.5}
+.hint{max-width:820px;margin:6px auto 0;font-size:11.5px;color:var(--muted);text-align:center}
+
+/* settings */
+.set{background:var(--panel);border-left:1px solid var(--line);overflow:auto;min-height:0}
+.set-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);font-weight:600;position:sticky;top:0;background:var(--panel);z-index:1}
+#closeSettings{display:none;border:0;background:transparent;font-size:20px;color:var(--muted)}
+.grp{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.fld label.l,.fld .l{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500}
+select,.num,.txt-in{width:100%;height:34px;border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:0 10px;outline:none}
+select:focus,.num:focus,.txt-in:focus{border-color:#4a4a52}
+select:disabled{opacity:.5}
+.sl{display:grid;grid-template-columns:minmax(0,1fr) 82px;gap:10px;align-items:center}
+.sl input[type=range]{width:100%;accent-color:var(--accent)}
+.sl .num{height:30px;text-align:right;font:12.5px var(--mono)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sw b{font-weight:500;font-size:13px}
+.sw small{display:block;color:var(--muted);font-size:11.5px;line-height:1.35;margin-top:1px}
+.switch{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:20px;background:#303036;position:relative;cursor:pointer;flex:none;transition:background .15s;margin:0}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#b8b8c0;transition:transform .15s,background .15s}
+.switch:checked{background:var(--accent)}
+.switch:checked::after{transform:translateX(14px);background:#fff}
+.switch:disabled{opacity:.4;cursor:not-allowed}
+.note{font-size:11.5px;color:var(--muted);margin:-6px 0 0}
+.sect{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+
+/* modals */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.ov.on{display:flex}
+.modal{width:min(560px,100%);max-height:calc(100dvh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.modal h3{margin:0 0 4px;font-size:17px}
+.modal p{margin:0 0 14px;color:var(--muted);font-size:13px}
+.kr{display:flex;gap:8px;margin-bottom:12px}
+.kr input{flex:1;min-width:0}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:14px;color:var(--muted)}
+.chk input{accent-color:var(--accent)}
+.mf{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center}
+.kst{margin-right:auto;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.tabs{display:flex;gap:4px;margin-bottom:10px}
+.tab{border:0;background:transparent;color:var(--muted);padding:5px 12px;border-radius:8px;font-size:13px}
+.tab.on{background:var(--panel2);color:var(--fg)}
+.out{margin:0 0 14px;padding:12px;background:#0e0e10;border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:52vh;font:12px/1.6 var(--mono);white-space:pre}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#232328;border:1px solid var(--line);padding:8px 14px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:60}
+.toast.on{opacity:1}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{display:none}
+  #openSettings{display:inline-flex}
+  .set{position:fixed;top:0;right:0;bottom:0;width:min(340px,100%);transform:translateX(100%);transition:transform .2s;z-index:40;box-shadow:-10px 0 40px rgba(0,0,0,.5)}
+  .set.on{transform:none}
+  #closeSettings{display:block}
+  .top .mdl{display:none}
+  .btn .lbl{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Primary">
+    <div class="mark" aria-hidden="true">P</div>
+    <button class="ri on" title="Chat" aria-label="Chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></button>
+    <button class="ri" id="railKey" title="API key" aria-label="API key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg></button>
+    <div class="grow"></div>
+    <a class="ri" href="https://console.groq.com/docs" target="_blank" rel="noopener noreferrer" title="Docs" aria-label="Docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h6M8 11h6"/></svg></a>
+  </nav>
+
+  <main class="main">
+    <header class="top">
+      <h1>Playground</h1>
+      <span class="mdl" id="topModel"></span>
+      <span class="sp"></span>
+      <button class="btn" id="clear" title="Clear chat">Clear<span class="lbl">&nbsp;chat</span></button>
+      <button class="btn" id="viewCode">&lt;/&gt;<span class="lbl">&nbsp;View code</span></button>
+      <button class="btn" id="keyBtn"><span class="dot" id="keyDot"></span><span class="lbl">API key</span></button>
+      <button class="btn" id="openSettings">Settings</button>
+    </header>
+
+    <div class="scroll" id="scroll">
+      <div class="col">
+        <details class="sys" id="sysCard" open>
+          <summary><span>System instructions</span><span id="sysHint"></span></summary>
+          <textarea id="sys" rows="2" placeholder="Describe desired model behavior (optional)"></textarea>
+        </details>
+        <div id="thread" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="composer">
+      <div class="cbox">
+        <textarea id="input" rows="1" placeholder="Enter your message..." aria-label="Message"></textarea>
+        <button class="btn pri" id="send">Send</button>
+      </div>
+      <div class="hint">Enter to send · Shift+Enter for a new line</div>
+    </div>
+  </main>
+
+  <aside class="set" id="settings" aria-label="Settings">
+    <div class="set-h"><span>Settings</span><button id="closeSettings" aria-label="Close settings">&times;</button></div>
+
+    <div class="grp">
+      <div class="fld">
+        <label class="l" for="model">Model</label>
+        <select id="model"></select>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="fld">
+        <div class="l"><label for="tempN">Temperature</label></div>
+        <div class="sl"><input type="range" id="temp" min="0" max="2" step="0.01" aria-label="Temperature slider"><input class="num" id="tempN" type="number" min="0" max="2" step="0.01"></div>
+      </div>
+      <div class="fld">
+        <div class="l"><label for="maxN">Max Completion Tokens</label></div>
+        <div class="sl"><input type="range" id="max" min="1" max="65536" step="1" aria-label="Max completion tokens slider"><input class="num" id="maxN" type="number" min="1" max="131072" step="1"></div>
+      </div>
+      <div class="fld">
+        <div class="l"><label for="toppN">Top P</label></div>
+        <div class="sl"><input type="range" id="topp" min="0" max="1" step="0.01" aria-label="Top P slider"><input class="num" id="toppN" type="number" min="0" max="1" step="0.01"></div>
+      </div>
+      <div class="fld">
+        <label class="l" for="stopSeq">Stop sequence</label>
+        <input class="txt-in" id="stopSeq" type="text" placeholder="Optional">
+      </div>
+    </div>
+
+    <div class="grp">
+      <p class="sect">Reasoning</p>
+      <div class="fld" id="effortRow">
+        <label class="l" for="effort">Reasoning effort</label>
+        <select id="effort"></select>
+      </div>
+      <p class="note" id="effortNote"></p>
+    </div>
+
+    <div class="grp">
+      <p class="sect">Options</p>
+      <label class="sw"><span><b>Stream</b><small>Show tokens as they arrive</small></span><input class="switch" type="checkbox" id="stream"></label>
+      <label class="sw"><span><b>JSON mode</b><small>Forces valid JSON. Your prompt must mention "JSON".</small></span><input class="switch" type="checkbox" id="json"></label>
+    </div>
+
+    <div class="grp">
+      <p class="sect">Tools</p>
+      <label class="sw"><span><b>Browser search</b><small>Let the model search the web</small></span><input class="switch" type="checkbox" id="browser"></label>
+      <label class="sw"><span><b>Code interpreter</b><small>Let the model run Python</small></span><input class="switch" type="checkbox" id="code"></label>
+      <p class="note" id="toolsNote"></p>
+    </div>
+  </aside>
+</div>
+
+<div class="ov" id="keyModal" role="dialog" aria-modal="true" aria-labelledby="keyTitle">
+  <div class="modal">
+    <h3 id="keyTitle">API key</h3>
+    <p>Paste your Groq API key. Requests go straight from this page to api.groq.com. Create a key at console.groq.com/keys.</p>
+    <div class="kr">
+      <input class="txt-in" id="keyInput" type="password" placeholder="gsk_..." autocomplete="off" spellcheck="false" aria-label="Groq API key">
+      <button class="btn" id="keyShow" type="button">Show</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="keyRemember"> Remember the key in this browser</label>
+    <div class="mf">
+      <span class="kst" id="keyStatus"></span>
+      <button class="btn" id="keyClose" type="button">Close</button>
+      <button class="btn pri" id="keySave" type="button">Save &amp; load models</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="codeModal" role="dialog" aria-modal="true" aria-labelledby="codeTitle">
+  <div class="modal" style="width:min(720px,100%)">
+    <h3 id="codeTitle">View code</h3>
+    <p>Your current settings and conversation as a ready-to-run request. Set GROQ_API_KEY first.</p>
+    <div class="tabs" id="codeTabs">
+      <button class="tab on" data-lang="python">Python</button>
+      <button class="tab" data-lang="js">JavaScript</button>
+      <button class="tab" data-lang="curl">cURL</button>
+    </div>
+    <pre class="out" id="codeOut"></pre>
+    <div class="mf"><button class="btn" id="codeCopy">Copy</button><button class="btn pri" id="codeClose">Done</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+var API='https://api.groq.com/openai/v1';
+var store={
+  get:function(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
+  del:function(k){try{localStorage.removeItem(k)}catch(e){}}
+};
+var FALLBACK=['openai/gpt-oss-120b','openai/gpt-oss-20b','groq/compound','groq/compound-mini','llama-3.3-70b-versatile','llama-3.1-8b-instant','qwen/qwen3-32b','meta-llama/llama-4-scout-17b-16e-instruct','moonshotai/kimi-k2-instruct'];
+var S=Object.assign({model:'openai/gpt-oss-20b',temperature:1,max_completion_tokens:8192,top_p:1,reasoning:'medium',stream:true,json:false,browser:false,code:false,stop:'',system:''},store.get('pg_settings',{}));
+var apiKey=store.get('pg_key','')||'';
+var remember=store.get('pg_remember',true);
+var messages=store.get('pg_chat',[]);
+if(!Array.isArray(messages))messages=[];
+var busy=false,ctrl=null,raf=0,modelIds=FALLBACK.slice();
+
+/* ---------- helpers ---------- */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function save(){store.set('pg_settings',S)}
+function saveChat(){
+  store.set('pg_chat',messages.slice(-40).map(function(m){return {role:m.role,content:m.content,reasoning:m.reasoning,stats:m.stats,error:m.error}}));
+}
+var toastT=0;
+function toast(t){var e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){e.classList.remove('on')},1600)}
+function copy(text){
+  var done=function(){toast('Copied')};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text);done()})}
+  else{fallbackCopy(text);done()}
+}
+function fallbackCopy(t){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()}
+function autosize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,el.id==='sys'?240:200)+'px'}
+
+/* ---------- model capabilities ---------- */
+function caps(id){
+  id=id||S.model;
+  var oss=/gpt-oss/.test(id),compound=/compound/.test(id),qwen=/qwen3/.test(id),r1=/deepseek-r1/.test(id);
+  return {oss:oss,compound:compound,qwen:qwen,r1:r1,effort:oss?['low','medium','high']:qwen?['none','default']:null,tools:oss||compound};
+}
+
+/* ---------- markdown ---------- */
+function inline(t){
+  var codes=[];
+  t=t.replace(/`([^`\n]+)`/g,function(m,c){codes.push(c);return '\u0001'+(codes.length-1)+'\u0001'});
+  t=esc(t);
+  t=t.replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g,'$1<em>$2</em>');
+  t=t.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  t=t.replace(/\u0001(\d+)\u0001/g,function(m,i){return '<code>'+esc(codes[+i])+'</code>'});
+  return t;
+}
+function codeBlock(l,c){
+  return '<div class="code"><div class="code-h"><span>'+esc(l||'text')+'</span><button data-copycode type="button">Copy</button></div><pre><code>'+esc(c)+'</code></pre></div>';
+}
+function md(src){
+  var blocks=[];
+  src=String(src).replace(/```([\w+-]*)[^\S\n]*\n?([\s\S]*?)(?:```|$)/g,function(m,l,c){blocks.push([l,c.replace(/\n$/,'')]);return '\n\u0000'+(blocks.length-1)+'\u0000\n'});
+  var lines=src.split('\n'),out='',i=0,para=[],m;
+  function flush(){if(para.length){out+='<p>'+para.map(inline).join('<br>')+'</p>';para=[]}}
+  function cells(r){return r.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(function(c){return c.trim()})}
+  while(i<lines.length){
+    var L=lines[i];
+    if(/^\u0000\d+\u0000$/.test(L.trim())){flush();var b=blocks[+L.trim().slice(1,-1)];out+=codeBlock(b[0],b[1]);i++;continue}
+    if(!L.trim()){flush();i++;continue}
+    if((m=L.match(/^(#{1,4})\s+(.*)$/))){flush();var n=m[1].length+1;out+='<h'+n+'>'+inline(m[2])+'</h'+n+'>';i++;continue}
+    if(/^\s*(-{3,}|\*{3,})\s*$/.test(L)){flush();out+='<hr>';i++;continue}
+    if(/^>\s?/.test(L)){flush();var q=[];while(i<lines.length&&/^>\s?/.test(lines[i])){q.push(lines[i].replace(/^>\s?/,''));i++}out+='<blockquote>'+q.map(inline).join('<br>')+'</blockquote>';continue}
+    if(/^\s*([-*+]|\d+[.)])\s+/.test(L)){
+      flush();var ord=/^\s*\d/.test(L),items=[];
+      while(i<lines.length&&/^\s*([-*+]|\d+[.)])\s+/.test(lines[i])){items.push(lines[i].replace(/^\s*([-*+]|\d+[.)])\s+/,''));i++}
+      out+=(ord?'<ol>':'<ul>')+items.map(function(x){return '<li>'+inline(x)+'</li>'}).join('')+(ord?'</ol>':'</ul>');continue;
+    }
+    if(/^\s*\|/.test(L)&&i+1<lines.length&&/^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(lines[i+1])){
+      flush();var head=cells(L);i+=2;var rows=[];
+      while(i<lines.length&&/^\s*\|/.test(lines[i])){rows.push(cells(lines[i]));i++}
+      out+='<div class="tbl"><table><thead><tr>'+head.map(function(h){return '<th>'+inline(h)+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+inline(c)+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>';
+      continue;
+    }
+    para.push(L);i++;
+  }
+  flush();
+  return out;
+}
+
+/* ---------- executed tools ---------- */
+function parseArgs(a){if(!a)return {};if(typeof a==='object')return a;try{return JSON.parse(a)}catch(e){return {raw:String(a)}}}
+function toolsHtml(tools){
+  if(!tools||!tools.length)return '';
+  return tools.map(function(t){
+    var type=t.type||'tool',args=parseArgs(t.arguments),h='';
+    var isCode=/python|code/.test(type),isSearch=/search|browse|visit/.test(type);
+    var title=isCode?'Code interpreter':isSearch?'Browser search':type;
+    if(isCode){
+      var code=args.code||args.raw||'';
+      if(code)h+='<h6>Code</h6><pre>'+esc(code)+'</pre>';
+      if(t.output)h+='<h6>Output</h6><pre>'+esc(t.output)+'</pre>';
+    }else{
+      if(args.query||args.url||args.raw)h+='<h6>Query</h6><pre>'+esc(args.query||args.url||args.raw)+'</pre>';
+      var rs=(t.search_results&&t.search_results.results)||[];
+      if(rs.length){h+='<h6>Results</h6>'+rs.map(function(r){
+        var u=/^https?:\/\//.test(r.url||'')?r.url:'';
+        return '<div class="res">'+(u?'<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(r.title||u)+'</a>':esc(r.title||''))+'<small>'+esc((r.content||'').slice(0,220))+'</small></div>';
+      }).join('')}
+      else if(t.output)h+='<h6>Output</h6><pre>'+esc(String(t.output).slice(0,2000))+'</pre>';
+    }
+    if(!h)h='<pre>'+esc(JSON.stringify(t,null,2).slice(0,2000))+'</pre>';
+    return '<details class="tool"><summary>'+esc(title)+'</summary><div class="tool-b">'+h+'</div></details>';
+  }).join('');
+}
+
+/* ---------- rendering ---------- */
+function msgInner(m,i){
+  var last=i===messages.length-1,isA=m.role==='assistant';
+  var acts='<span class="acts"><button data-act="copy" type="button">Copy</button>'+(isA&&last&&!busy?'<button data-act="regen" type="button">Regenerate</button>':'')+'<button data-act="del" type="button">Delete</button></span>';
+  var h='<div class="role">'+(isA?'Assistant':'User')+acts+'</div>';
+  if(!isA)return h+'<div class="txt">'+esc(m.content)+'</div>';
+  var live=busy&&last;
+  if(m.reasoning){
+    var open=m.ropen!==undefined?m.ropen:(live&&!m.content);
+    h+='<details class="think"'+(open?' open':'')+'><summary data-think>Reasoning</summary><div class="think-b">'+esc(m.reasoning)+'</div></details>';
+  }
+  h+=toolsHtml(m.tools);
+  if(m.content)h+='<div class="md">'+md(m.content)+'</div>';
+  else if(live&&!m.reasoning&&!(m.tools&&m.tools.length))h+='<div class="typing" aria-label="Generating"><i></i><i></i><i></i></div>';
+  if(m.error)h+='<div class="err">'+esc(m.error)+'</div>';
+  if(m.stopped)h+='<div class="stats">Stopped</div>';
+  if(m.stats)h+='<div class="stats">'+esc(m.stats)+'</div>';
+  return h;
+}
+function renderAll(){
+  var t=$('#thread');
+  if(!messages.length){
+    t.innerHTML='<div class="empty"><h2>Playground</h2><p>Pick a model, tune the settings on the right, and start a conversation.</p><div class="chips">'+
+      ['Explain how transformers work in simple terms','Write a Python function to merge two sorted lists','Give me a JSON list of 5 startup ideas','What are the top tech headlines today?'].map(function(x){return '<button class="chip" type="button" data-chip="'+esc(x)+'">'+esc(x)+'</button>'}).join('')+'</div></div>';
+    return;
+  }
+  t.innerHTML=messages.map(function(m,i){return '<article class="msg '+m.role+'" data-i="'+i+'">'+msgInner(m,i)+'</article>'}).join('');
+}
+function paint(i){
+  var el=$('#thread').querySelector('[data-i="'+i+'"]');
+  if(!el){renderAll();return}
+  el.innerHTML=msgInner(messages[i],i);
+}
+function schedule(){
+  if(raf)return;
+  raf=requestAnimationFrame(function(){
+    raf=0;
+    var sc=$('#scroll'),near=sc.scrollHeight-sc.scrollTop-sc.clientHeight<140;
+    paint(messages.length-1);
+    if(near)sc.scrollTop=sc.scrollHeight;
+  });
+}
+function scrollEnd(){var sc=$('#scroll');sc.scrollTop=sc.scrollHeight}
+
+/* ---------- request ---------- */
+function buildBody(forRun){
+  var c=caps(),msgs=[];
+  if(S.system.trim())msgs.push({role:'system',content:S.system});
+  messages.forEach(function(m){
+    if(m.role==='assistant'&&(!m.content||m.error&&!m.content))return;
+    msgs.push({role:m.role,content:m.content});
+  });
+  var b={model:S.model,messages:msgs,temperature:+S.temperature,max_completion_tokens:+S.max_completion_tokens,top_p:+S.top_p,stream:!!S.stream};
+  if(S.stop.trim())b.stop=S.stop;
+  if(S.json)b.response_format={type:'json_object'};
+  if(c.effort){b.reasoning_effort=c.effort.indexOf(S.reasoning)>=0?S.reasoning:(c.oss?'medium':'default')}
+  if(c.qwen||c.r1)b.reasoning_format='parsed';
+  if(c.oss){
+    var tools=[];
+    if(S.browser)tools.push({type:'browser_search'});
+    if(S.code)tools.push({type:'code_interpreter'});
+    if(tools.length)b.tools=tools;
+  }
+  if(c.compound&&(S.browser||S.code)){
+    var en=[];
+    if(S.browser){en.push('web_search');en.push('visit_website')}
+    if(S.code)en.push('code_interpreter');
+    b.compound_custom={tools:{enabled_tools:en}};
+  }
+  return b;
+}
+function mergeTools(a,list){
+  list.forEach(function(t,k){
+    var idx=typeof t.index==='number'?t.index:k;
+    if(a.tools[idx])Object.assign(a.tools[idx],t);else a.tools[idx]=t;
+  });
+  a.tools=a.tools.filter(Boolean);
+}
+async function readStream(res,a){
+  var reader=res.body.getReader(),dec=new TextDecoder(),buf='';
+  while(true){
+    var r=await reader.read();
+    if(r.done)break;
+    buf+=dec.decode(r.value,{stream:true});
+    var i;
+    while((i=buf.indexOf('\n'))>=0){
+      var line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+      if(line.indexOf('data:')!==0)continue;
+      var d=line.slice(5).trim();
+      if(d==='[DONE]')return;
+      var j;try{j=JSON.parse(d)}catch(e){continue}
+      if(j.error)throw new Error(j.error.message||'Stream error');
+      var dl=(j.choices&&j.choices[0]&&j.choices[0].delta)||{};
+      if(dl.content)a.content+=dl.content;
+      if(dl.reasoning)a.reasoning+=dl.reasoning;
+      if(dl.executed_tools)mergeTools(a,dl.executed_tools);
+      var u=(j.x_groq&&j.x_groq.usage)||j.usage;
+      if(u)a.usage=u;
+      schedule();
+    }
+  }
+}
+async function run(){
+  if(busy)return;
+  if(!apiKey){openKey();return}
+  var body=buildBody();
+  var a={role:'assistant',content:'',reasoning:'',tools:[],stats:'',usage:null};
+  messages.push(a);
+  busy=true;ctrl=new AbortController();setBusy();renderAll();scrollEnd();
+  var t0=performance.now();
+  try{
+    var headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
+    if(body.compound_custom)headers['Groq-Model-Version']='latest';
+    var res=await fetch(API+'/chat/completions',{method:'POST',headers:headers,body:JSON.stringify(body),signal:ctrl.signal});
+    if(!res.ok){
+      var e={};try{e=await res.json()}catch(x){}
+      throw new Error((e.error&&e.error.message)||('Request failed with status '+res.status));
+    }
+    if(body.stream){await readStream(res,a)}
+    else{
+      var j=await res.json(),ch=(j.choices&&j.choices[0])||{},m=ch.message||{};
+      a.content=m.content||'';a.reasoning=m.reasoning||'';a.tools=m.executed_tools||[];a.usage=j.usage||null;
+    }
+  }catch(err){
+    if(err&&err.name==='AbortError')a.stopped=true;
+    else{
+      a.error=(err&&err.message)||'Something went wrong';
+      if(/Failed to fetch|NetworkError/i.test(a.error))a.error='Could not reach api.groq.com. Check your connection and API key.';
+    }
+  }
+  var secs=(performance.now()-t0)/1000;
+  var tok=a.usage&&a.usage.completion_tokens?a.usage.completion_tokens:Math.round((a.content.length+a.reasoning.length)/4);
+  if(!a.error&&(a.content||a.reasoning)){
+    a.stats=secs.toFixed(2)+'s · '+tok+' tokens · '+(tok/Math.max(secs,.001)).toFixed(0)+' tok/s'+(a.usage&&a.usage.prompt_tokens?' · '+a.usage.prompt_tokens+' in':'');
+  }
+  if(!a.content&&!a.reasoning&&!a.tools.length&&(a.error||a.stopped)){
+    if(a.stopped&&!a.error){messages.pop()}
+  }
+  busy=false;ctrl=null;setBusy();renderAll();saveChat();
+}
+function setBusy(){
+  var b=$('#send');
+  b.textContent=busy?'Stop':'Send';
+  b.classList.toggle('pri',!busy);
+}
+function send(text){
+  text=(text||'').trim();
+  if(!text||busy)return;
+  messages.push({role:'user',content:text});
+  $('#input').value='';autosize($('#input'));
+  saveChat();run();
+}
+
+/* ---------- settings UI ---------- */
+function bindPair(r,n,key,min,max){
+  var R=$(r),N=$(n);
+  function set(v){v=+v;if(isNaN(v))return;v=Math.min(max,Math.max(min,v));S[key]=v;R.value=v;N.value=v;save()}
+  R.addEventListener('input',function(){set(R.value)});
+  N.addEventListener('change',function(){set(N.value)});
+  R.value=N.value=S[key];
+}
+function fillModels(ids){
+  if(ids.indexOf(S.model)<0)ids=[S.model].concat(ids);
+  var sel=$('#model');
+  sel.innerHTML=ids.map(function(id){return '<option value="'+esc(id)+'">'+esc(id)+'</option>'}).join('');
+  sel.value=S.model;
+}
+function syncCaps(){
+  var c=caps(),eff=$('#effort');
+  if(c.effort){
+    eff.disabled=false;
+    eff.innerHTML=c.effort.map(function(x){return '<option value="'+x+'">'+x[0].toUpperCase()+x.slice(1)+'</option>'}).join('');
+    if(c.effort.indexOf(S.reasoning)<0)S.reasoning=c.oss?'medium':'default';
+    eff.value=S.reasoning;
+    $('#effortNote').textContent=c.oss?'Low is fastest. High thinks longest.':'Choose None to skip thinking.';
+  }else{
+    eff.disabled=true;eff.innerHTML='<option>Not supported</option>';
+    $('#effortNote').textContent='This model has no adjustable reasoning effort.';
+  }
+  $('#browser').disabled=$('#code').disabled=!c.tools;
+  $('#toolsNote').textContent=c.tools?(c.compound?'Compound chooses tools itself. Turning a toggle on limits it to the tools you pick.':''):'Browser search and code interpreter work with gpt-oss and Compound models.';
+  $('#topModel').textContent=S.model;
+}
+function syncUI(){
+  $('#stream').checked=!!S.stream;$('#json').checked=!!S.json;
+  $('#browser').checked=!!S.browser;$('#code').checked=!!S.code;
+  $('#stopSeq').value=S.stop;$('#sys').value=S.system;
+  $('#sysHint').textContent=S.system.trim()?'Set':'';
+  syncCaps();
+}
+function setKeyUI(){
+  $('#keyDot').classList.toggle('ok',!!apiKey);
+}
+
+/* ---------- API key ---------- */
+function openKey(){
+  $('#keyInput').value=apiKey;$('#keyRemember').checked=!!remember;$('#keyStatus').textContent='';
+  $('#keyModal').classList.add('on');setTimeout(function(){$('#keyInput').focus()},30);
+}
+function closeKey(){$('#keyModal').classList.remove('on')}
+async function loadModels(key,quiet){
+  try{
+    var res=await fetch(API+'/models',{headers:{Authorization:'Bearer '+key}});
+    var j=await res.json();
+    if(!res.ok)throw new Error((j.error&&j.error.message)||('Status '+res.status));
+    var ids=(j.data||[]).map(function(m){return m.id}).filter(function(id){return !/whisper|tts|playai|orpheus|guard|safeguard/i.test(id)}).sort();
+    if(ids.length){modelIds=ids;fillModels(ids);syncCaps()}
+    return ids.length;
+  }catch(e){
+    if(!quiet)throw e;
+    return -1;
+  }
+}
+async function saveKey(){
+  var k=$('#keyInput').value.trim(),st=$('#keyStatus');
+  if(!k){st.textContent='Enter a key first.';return}
+  st.textContent='Checking key...';
+  try{
+    var n=await loadModels(k,false);
+    apiKey=k;remember=$('#keyRemember').checked;
+    store.set('pg_remember',remember);
+    if(remember)store.set('pg_key',k);else store.del('pg_key');
+    setKeyUI();
+    st.textContent='Connected. '+n+' models loaded.';
+    setTimeout(closeKey,700);
+  }catch(e){
+    st.textContent='That key did not work: '+(e.message||'unknown error');
+  }
+}
+
+/* ---------- view code ---------- */
+function py(v,ind){
+  ind=ind||0;var p='    '.repeat(ind),q='    '.repeat(ind+1);
+  if(v===null)return 'None';if(v===true)return 'True';if(v===false)return 'False';
+  if(typeof v==='number')return String(v);if(typeof v==='string')return JSON.stringify(v);
+  if(Array.isArray(v))return v.length?'[\n'+v.map(function(x){return q+py(x,ind+1)}).join(',\n')+'\n'+p+']':'[]';
+  var k=Object.keys(v);
+  return k.length?'{\n'+k.map(function(x){return q+JSON.stringify(x)+': '+py(v[x],ind+1)}).join(',\n')+'\n'+p+'}':'{}';
+}
+function genCode(lang){
+  var b=buildBody(),extra=null;
+  if(b.compound_custom){extra={compound_custom:b.compound_custom};delete b.compound_custom}
+  if(lang==='python'){
+    var s='import os\nfrom groq import Groq\n\nclient = Groq(api_key=os.environ.get("GROQ_API_KEY"))\n\ncompletion = client.chat.completions.create(\n';
+    Object.keys(b).forEach(function(k){s+='    '+k+'='+py(b[k],1)+',\n'});
+    if(extra)s+='    extra_body='+py(extra,1)+',\n    extra_headers={"Groq-Model-Version": "latest"},\n';
+    s+=')\n\n';
+    s+=b.stream?'for chunk in completion:\n    print(chunk.choices[0].delta.content or "", end="")\n':'print(completion.choices[0].message.content)\n';
+    return s;
+  }
+  var full=Object.assign({},b,extra||{});
+  var hdr='"Content-Type": "application/json",\n    "Authorization": "Bearer " + process.env.GROQ_API_KEY';
+  if(lang==='js'){
+    var js='const res = await fetch("'+API+'/chat/completions", {\n  method: "POST",\n  headers: {\n    '+hdr+(extra?',\n    "Groq-Model-Version": "latest"':'')+'\n  },\n  body: JSON.stringify('+JSON.stringify(full,null,2).replace(/\n/g,'\n  ')+')\n});\n\n';
+    js+=b.stream?'const reader = res.body.getReader();\nconst decoder = new TextDecoder();\nwhile (true) {\n  const { done, value } = await reader.read();\n  if (done) break;\n  console.log(decoder.decode(value));\n}\n':'const data = await res.json();\nconsole.log(data.choices[0].message.content);\n';
+    return js;
+  }
+  var data=JSON.stringify(full,null,2).replace(/'/g,"'\\''");
+  return 'curl '+API+'/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer $GROQ_API_KEY" \\\n'+(extra?'  -H "Groq-Model-Version: latest" \\\n':'')+'  -d \''+data+'\'\n';
+}
+var codeLang='python';
+function showCode(){$('#codeOut').textContent=genCode(codeLang)}
+
+/* ---------- events ---------- */
+function wire(){
+  bindPair('#temp','#tempN','temperature',0,2);
+  bindPair('#max','#maxN','max_completion_tokens',1,131072);
+  bindPair('#topp','#toppN','top_p',0,1);
+  fillModels(modelIds);syncUI();setKeyUI();setBusy();
+  $('#model').addEventListener('change',function(e){S.model=e.target.value;save();syncCaps()});
+  $('#effort').addEventListener('change',function(e){S.reasoning=e.target.value;save()});
+  ['stream','json','browser','code'].forEach(function(k){$('#'+k).addEventListener('change',function(e){S[k]=e.target.checked;save()})});
+  $('#stopSeq').addEventListener('input',function(e){S.stop=e.target.value;save()});
+  $('#sys').addEventListener('input',function(e){S.system=e.target.value;$('#sysHint').textContent=S.system.trim()?'Set':'';autosize(e.target);save()});
+  $('#input').addEventListener('input',function(e){autosize(e.target)});
+  $('#input').addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send(e.target.value)}
+  });
+  $('#send').addEventListener('click',function(){
+    if(busy){if(ctrl)ctrl.abort()}else send($('#input').value);
+  });
+  $('#clear').addEventListener('click',function(){
+    if(busy&&ctrl)ctrl.abort();
+    messages=[];saveChat();renderAll();
+  });
+  $('#keyBtn').addEventListener('click',openKey);
+  $('#railKey').addEventListener('click',openKey);
+  $('#keyClose').addEventListener('click',closeKey);
+  $('#keySave').addEventListener('click',saveKey);
+  $('#keyInput').addEventListener('keydown',function(e){if(e.key==='Enter')saveKey()});
+  $('#keyShow').addEventListener('click',function(){
+    var i=$('#keyInput'),show=i.type==='password';
+    i.type=show?'text':'password';this.textContent=show?'Hide':'Show';
+  });
+  $('#viewCode').addEventListener('click',function(){showCode();$('#codeModal').classList.add('on')});
+  $('#codeClose').addEventListener('click',function(){$('#codeModal').classList.remove('on')});
+  $('#codeCopy').addEventListener('click',function(){copy($('#codeOut').textContent)});
+  $('#codeTabs').addEventListener('click',function(e){
+    var b=e.target.closest('[data-lang]');if(!b)return;
+    codeLang=b.dataset.lang;
+    document.querySelectorAll('#codeTabs .tab').forEach(function(t){t.classList.toggle('on',t===b)});
+    showCode();
+  });
+  document.querySelectorAll('.ov').forEach(function(o){o.addEventListener('mousedown',function(e){if(e.target===o)o.classList.remove('on')})});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.querySelectorAll('.ov.on').forEach(function(o){o.classList.remove('on')});$('#settings').classList.remove('on')}});
+  $('#openSettings').addEventListener('click',function(){$('#settings').classList.add('on')});
+  $('#closeSettings').addEventListener('click',function(){$('#settings').classList.remove('on')});
+  $('#thread').addEventListener('click',function(e){
+    var chip=e.target.closest('[data-chip]');
+    if(chip){send(chip.dataset.chip);return}
+    var cc=e.target.closest('[data-copycode]');
+    if(cc){var code=cc.closest('.code').querySelector('code');copy(code.textContent);return}
+    var th=e.target.closest('[data-think]');
+    if(th){var art=th.closest('.msg'),det=th.parentElement;messages[+art.dataset.i].ropen=!det.open;return}
+    var act=e.target.closest('[data-act]');
+    if(!act)return;
+    var art2=act.closest('.msg'),i=+art2.dataset.i,m=messages[i];
+    if(act.dataset.act==='copy')copy(m.content||'');
+    else if(act.dataset.act==='del'){if(busy)return;messages.splice(i,1);saveChat();renderAll()}
+    else if(act.dataset.act==='regen'){if(busy)return;messages.splice(i,1);saveChat();run()}
+  });
+}
+
+wire();
+renderAll();
+autosize($('#sys'));
+if(apiKey){loadModels(apiKey,true)}else{openKey()}
+})();
+</script>
+</body>
+</html>
